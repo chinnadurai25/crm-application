@@ -1,0 +1,98 @@
+import React from 'react';
+import { NavLink } from 'react-router-dom';
+import { 
+  BarChart3, 
+  Users, 
+  UserPlus, 
+  CheckSquare, 
+  MessageSquare, 
+  Settings, 
+  ChevronLeft, 
+  ChevronRight,
+  LogOut,
+  LayoutDashboard
+} from 'lucide-react';
+import { cn } from '../../utils/cn';
+
+interface SidebarProps {
+  isCollapsed: boolean;
+  toggleSidebar: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
+  const navItems = [
+    { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
+    { title: 'Leads', icon: UserPlus, path: '/leads' },
+    { title: 'Customers', icon: Users, path: '/customers' },
+    { title: 'Tasks', icon: CheckSquare, path: '/tasks' },
+    { title: 'Support', icon: MessageSquare, path: '/support' },
+    { title: 'Analytics', icon: BarChart3, path: '/analytics' },
+  ];
+
+  return (
+    <div
+      className={cn(
+        "fixed left-0 top-0 h-screen glass z-50 transition-all duration-300 flex flex-col",
+        isCollapsed ? "w-20" : "w-64"
+      )}
+    >
+      <div className="flex items-center justify-between p-6">
+        {!isCollapsed && (
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+              <span className="text-white font-bold text-xl">F</span>
+            </div>
+            <span className="font-bold text-xl tracking-tight text-slate-800">FlyTowards</span>
+          </div>
+        )}
+        {isCollapsed && (
+          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center mx-auto">
+            <span className="text-white font-bold text-xl">F</span>
+          </div>
+        )}
+      </div>
+
+      <nav className="flex-1 px-4 space-y-2 mt-4">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) =>
+              cn(
+                "flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group",
+                isActive 
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" 
+                  : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+              )
+            }
+          >
+            <item.icon className="w-5 h-5 min-w-[20px]" />
+            {!isCollapsed && <span className="font-medium">{item.title}</span>}
+          </NavLink>
+        ))}
+      </nav>
+
+      <div className="p-4 border-t border-slate-100 space-y-2">
+        <button
+          onClick={toggleSidebar}
+          className="flex items-center gap-3 w-full px-3 py-3 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-all duration-200"
+        >
+          {isCollapsed ? <ChevronRight className="w-5 h-5 mx-auto" /> : (
+            <>
+              <ChevronLeft className="w-5 h-5" />
+              <span className="font-medium">Collapse Sidebar</span>
+            </>
+          )}
+        </button>
+        <button
+          className="flex items-center gap-3 w-full px-3 py-3 rounded-xl text-rose-500 hover:bg-rose-50/50 transition-all duration-200"
+        >
+          <LogOut className="w-5 h-5" />
+          {!isCollapsed && <span className="font-medium">Logout</span>}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default Sidebar;
