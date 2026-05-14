@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, Navigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import { cn } from '../../utils/cn';
+import { useAppSelector } from '../../store';
 
 const MainLayout: React.FC = () => {
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);

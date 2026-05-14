@@ -1,14 +1,24 @@
 import React from 'react';
 import { Search, Bell, Sun, Moon, Clock } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { useAppSelector } from '../../store';
 
 interface NavbarProps {
   isSidebarCollapsed: boolean;
 }
 
 const Navbar: React.FC<NavbarProps> = ({ isSidebarCollapsed }) => {
+  const { user } = useAppSelector((state) => state.auth);
   const [isDark, setIsDark] = React.useState(false);
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
+
+  const initials = user?.name
+    ? user.name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+    : '??';
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -72,11 +82,11 @@ const Navbar: React.FC<NavbarProps> = ({ isSidebarCollapsed }) => {
 
         <button className="flex items-center gap-3 p-1.5 pr-3 rounded-xl hover:bg-slate-100 transition-all">
           <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold border border-indigo-200">
-            JD
+            {initials}
           </div>
           <div className="hidden sm:flex flex-col items-start leading-tight">
-            <span className="text-sm font-semibold text-slate-900">John Doe</span>
-            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Admin</span>
+            <span className="text-sm font-semibold text-slate-900">{user?.name || 'User'}</span>
+            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">{user?.role || 'Staff'}</span>
           </div>
         </button>
       </div>

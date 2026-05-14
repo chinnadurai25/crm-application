@@ -13,6 +13,9 @@ import {
   LayoutDashboard
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { useAppDispatch } from '../../store';
+import { logout } from '../../store/slices/authSlice';
+import { useNavigate } from 'react-router-dom';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -20,6 +23,13 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate('/login');
+  };
   const navItems = [
     { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
     { title: 'Leads', icon: UserPlus, path: '/leads' },
@@ -85,6 +95,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
           )}
         </button>
         <button
+          onClick={handleLogout}
           className="flex items-center gap-3 w-full px-3 py-3 rounded-xl text-rose-500 hover:bg-rose-50/50 transition-all duration-200"
         >
           <LogOut className="w-5 h-5" />

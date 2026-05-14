@@ -1,13 +1,47 @@
-import { Mail, Lock, User, Briefcase, Globe } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Mail, Lock, User, Briefcase, Globe, AlertCircle, ShieldCheck } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../../store';
+import { register, clearError } from '../../store/slices/authSlice';
 
 const Signup: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { isAuthenticated, isLoading, error } = useAppSelector((state) => state.auth);
 
-  const handleSignup = (e: React.FormEvent) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
+
+  const [passwordError, setPasswordError] = useState('');
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+    return () => {
+      dispatch(clearError());
+    };
+  }, [isAuthenticated, navigate, dispatch]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (e.target.name === 'confirmPassword' || e.target.name === 'password') {
+      setPasswordError('');
+    }
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate signup
-    navigate('/');
+    if (formData.password !== formData.confirmPassword) {
+      setPasswordError('Passwords do not match');
+      return;
+    }
+    const { confirmPassword, ...registerData } = formData;
+    dispatch(register(registerData));
   };
 
   return (
@@ -22,12 +56,19 @@ const Signup: React.FC = () => {
           Create account
         </h2>
         <p className="mt-2 text-center text-sm text-indigo-100/80">
-          Start your 14-day free trial today
+          Start managing your business relationships today
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="glass py-8 px-4 shadow-2xl rounded-3xl sm:px-10">
+          {(error || passwordError) && (
+            <div className="mb-4 p-3 bg-rose-50 border border-rose-100 rounded-xl flex items-center gap-3 text-rose-600 text-sm font-medium animate-shake">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              {error || passwordError}
+            </div>
+          )}
+
           <form className="space-y-6" onSubmit={handleSignup}>
             <div>
               <label htmlFor="name" className="block text-sm font-bold text-slate-700">
@@ -42,6 +83,8 @@ const Signup: React.FC = () => {
                   name="name"
                   type="text"
                   required
+                  value={formData.name}
+                  onChange={handleChange}
                   className="appearance-none block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent sm:text-sm transition-all"
                   placeholder="John Doe"
                 />
@@ -62,81 +105,78 @@ const Signup: React.FC = () => {
                   type="email"
                   autoComplete="email"
                   required
+                  value={formData.email}
+                  onChange={handleChange}
                   className="appearance-none block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent sm:text-sm transition-all"
                   placeholder="john@example.com"
                 />
               </div>
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-bold text-slate-700">
-                Password
-              </label>
-              <div className="mt-1 relative group">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="password" className="block text-sm font-bold text-slate-700">
+                  Password
+                </label>
+                <div className="mt-1 relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                  </div>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    required
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="appearance-none block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent sm:text-sm transition-all"
+                    placeholder="••••••••"
+                  />
                 </div>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  className="appearance-none block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent sm:text-sm transition-all"
-                  placeholder="Minimum 8 characters"
-                />
               </div>
-            </div>
 
-            <div className="flex items-center">
-              <input
-                id="terms"
-                name="terms"
-                type="checkbox"
-                required
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 rounded-lg"
-              />
-              <label htmlFor="terms" className="ml-2 block text-sm text-slate-600">
-                I agree to the <a href="#" className="font-bold text-indigo-600">Terms</a> and <a href="#" className="font-bold text-indigo-600">Privacy Policy</a>
-              </label>
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-bold text-slate-700">
+                  Confirm
+                </label>
+                <div className="mt-1 relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <ShieldCheck className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                  </div>
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    required
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className="appearance-none block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent sm:text-sm transition-all"
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
             </div>
 
             <div>
               <button
                 type="submit"
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg shadow-indigo-200 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all transform hover:translate-y-[-1px] active:translate-y-[0px]"
+                disabled={isLoading}
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg shadow-indigo-200 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all transform hover:translate-y-[-1px] active:translate-y-[0px] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Create Account
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  'Create Account'
+                )}
               </button>
             </div>
           </form>
-
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white/70 text-slate-500 uppercase tracking-widest font-bold text-[10px]">Or join with</span>
-              </div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <button className="w-full flex items-center justify-center gap-2 py-2.5 border border-slate-200 rounded-xl shadow-sm bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all">
-                <Globe className="w-4 h-4 text-rose-500" />
-                Google
-              </button>
-              <button className="w-full flex items-center justify-center gap-2 py-2.5 border border-slate-200 rounded-xl shadow-sm bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all">
-                <Briefcase className="w-4 h-4 text-slate-900" />
-                GitHub
-              </button>
-            </div>
-          </div>
         </div>
         
         <p className="mt-8 text-center text-sm text-white/80 font-medium">
           Already have an account?{' '}
           <Link to="/login" className="text-white hover:text-indigo-200 font-bold transition-colors">
-            Sign in
+            Sign in instead
           </Link>
         </p>
       </div>
