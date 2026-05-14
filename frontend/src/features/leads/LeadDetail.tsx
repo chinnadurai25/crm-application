@@ -1,37 +1,71 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, Mail, Phone, Building2,  
   Tag, MessageSquare, History, User,
   CheckCircle2, PhoneCall, MailPlus, AlertCircle
 } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../../store';
+import { updateLead, addTimelineEntry } from '../../store/slices/leadSlice';
 import { cn } from '../../utils/cn';
 import ConvertLeadModal from './ConvertLeadModal';
 
 const LeadDetail: React.FC = () => {
-  const { id: _id } = useParams<{ id: string }>();
-  const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
+  const { id } = useParams<{ id: string }>();
+  const dispatch = useAppDispatch();
+  const { items: leads } = useAppSelector((state) => state.leads);
+  const lead = leads.find((l) => l._id === id);
 
-  // Mock lead data
-  const lead = {
-    id: '1',
-    name: 'Alice Johnson',
-    email: 'alice@example.com',
-    phone: '+1 234 567 8901',
-    company: 'TechCorp Solutions',
-    status: 'Qualified',
-    source: 'Google Ads',
-    assignedTo: 'John Doe',
-    jobTitle: 'CMO',
-    notes: 'Interested in enterprise license for the next quarter. Budget approved, ready for demo.',
-    createdAt: '2026-04-01',
-    updatedAt: '2026-04-05',
-    timeline: [
-      { id: 't1', type: 'note', content: 'Met at the conference, seems interested.', user: 'John Doe', time: '2h ago', icon: MessageSquare },
-      { id: 't2', type: 'status', content: 'Status changed from "Contacted" to "Qualified"', user: 'System', time: '1d ago', icon: History },
-      { id: 't3', type: 'call', content: 'Follow-up call: Discussed pricing tiers.', user: 'John Doe', time: '2d ago', icon: PhoneCall },
-      { id: 't4', type: 'email', content: 'Sent personalized demo video.', user: 'John Doe', time: '4d ago', icon: MailPlus },
-    ]
+  const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
+  const [isAddingTimeline, setIsAddingTimeline] = useState(false);
+  const [newTimelineContent, setNewTimelineContent] = useState('');
+  const [timelineType, setTimelineType] = useState<'note' | 'call' | 'email'>('note');
+  
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [editableNotes, setEditableNotes] = useState('');
+
+  useEffect(() => {
+    if (lead) {
+      setEditableNotes(lead.notes || '');
+    }
+  }, [lead]);
+
+  if (!lead) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
+        <AlertCircle className="w-12 h-12 text-slate-300" />
+        <h2 className="text-xl font-bold text-slate-800">Lead Not Found</h2>
+        <p className="text-slate-500">The lead you are looking for does not exist or has been removed.</p>
+        <Link to="/leads" className="text-indigo-600 font-bold hover:underline">Back to Leads</Link>
+      </div>
+    );
+  }
+
+  const handleAddTimeline = async () => {
+    if (!newTimelineContent.trim()) return;
+    try {
+      await dispatch(addTimelineEntry({ 
+        id: lead._id, 
+        entry: { 
+          type: timelineType, 
+          content: newTimelineContent,
+          user: 'Admin' // Should come from auth
+        } 
+      })).unwrap();
+      setNewTimelineContent('');
+      setIsAddingTimeline(false);
+    } catch (err) {
+      console.error('Failed to add timeline entry:', err);
+    }
+  };
+
+  const handleUpdateNotes = async () => {
+    try {
+      await dispatch(updateLead({ id: lead._id, data: { notes: editableNotes } })).unwrap();
+      setIsEditingNotes(false);
+    } catch (err) {
+      console.error('Failed to update notes:', err);
+    }
   };
 
   const statusColors = {
@@ -40,6 +74,8 @@ const LeadDetail: React.FC = () => {
     'Qualified': 'bg-indigo-100 text-indigo-700 border-indigo-200',
     'Lost': 'bg-slate-100 text-slate-700 border-slate-200',
     'Converted': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    'Proposal': 'bg-violet-100 text-violet-700 border-violet-200',
+    'Negotiation': 'bg-rose-100 text-rose-700 border-rose-200',
   };
 
   return (
@@ -65,9 +101,13 @@ const LeadDetail: React.FC = () => {
             </div>
             <div className="flex items-center gap-2 text-sm text-slate-500 mt-0.5">
               <Building2 className="w-4 h-4" />
-              <span>{lead.company}</span>
-              <span className="mx-1 opacity-20">•</span>
-              <span>{lead.jobTitle}</span>
+              <span>{lead.company || 'No Company'}</span>
+              {lead.source && (
+                <>
+                  <span className="mx-1 opacity-20">•</span>
+                  <span>Source: {lead.source}</span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -147,20 +187,62 @@ const LeadDetail: React.FC = () => {
 
           {/* Activity Logs */}
           <div className="glass p-6 rounded-3xl">
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="text-lg font-bold text-slate-900">Activity Timeline</h3>
-              <button className="text-indigo-600 text-sm font-bold hover:underline">+ Add Entry</button>
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-lg font-bold text-slate-900">Activity Timeline</h3>
+            <button 
+              onClick={() => setIsAddingTimeline(!isAddingTimeline)}
+              className="text-indigo-600 text-sm font-bold hover:underline"
+            >
+              {isAddingTimeline ? 'Cancel' : '+ Add Entry'}
+            </button>
+          </div>
+
+          {isAddingTimeline && (
+            <div className="mb-8 p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-4 animate-slide-down">
+              <div className="flex gap-2">
+                {(['note', 'call', 'email'] as const).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setTimelineType(type)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all",
+                      timelineType === type ? "bg-indigo-600 text-white shadow-md" : "bg-white text-slate-500 border border-slate-200"
+                    )}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+              <textarea
+                value={newTimelineContent}
+                onChange={(e) => setNewTimelineContent(e.target.value)}
+                className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                placeholder="Describe the activity..."
+                rows={2}
+              />
+              <button
+                onClick={handleAddTimeline}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700"
+              >
+                Save Activity
+              </button>
             </div>
+          )}
             <div className="relative space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
-              {lead.timeline.map((entry) => (
-                <div key={entry.id} className="relative pl-10">
+              {lead.timeline && lead.timeline.length > 0 ? lead.timeline.map((entry) => (
+                <div key={entry._id || Math.random().toString()} className="relative pl-10">
                   <div className="absolute left-0 top-1 w-6 h-6 rounded-full bg-white border-2 border-slate-200 flex items-center justify-center z-10 shadow-sm group-hover:border-indigo-200">
-                    <entry.icon className="w-3 h-3 text-slate-400" />
+                    {entry.type === 'note' && <MessageSquare className="w-3 h-3 text-slate-400" />}
+                    {entry.type === 'call' && <PhoneCall className="w-3 h-3 text-slate-400" />}
+                    {entry.type === 'email' && <MailPlus className="w-3 h-3 text-slate-400" />}
+                    {entry.type === 'status' && <History className="w-3 h-3 text-slate-400" />}
                   </div>
                   <div className="bg-slate-50/50 rounded-2xl p-4 hover:bg-slate-50 transition-colors">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-bold text-slate-800">{entry.content}</span>
-                      <span className="text-xs text-slate-400 font-medium">{entry.time}</span>
+                      <span className="text-xs text-slate-400 font-medium">
+                        {new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 text-[8px] font-bold">
@@ -170,7 +252,11 @@ const LeadDetail: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="pl-10 text-slate-400 text-sm italic">
+                  No activity recorded yet.
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -182,14 +268,44 @@ const LeadDetail: React.FC = () => {
               <AlertCircle className="w-5 h-5 text-indigo-100" />
             </div>
             <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest opacity-40 mb-4">Internal Notes</h3>
-            <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100">
-              <p className="text-sm text-slate-700 leading-relaxed italic">
-                "{lead.notes}"
-              </p>
-            </div>
-            <button className="mt-4 w-full py-2.5 text-indigo-600 text-sm font-bold hover:bg-indigo-50 rounded-xl transition-all">
-              Update Notes
-            </button>
+            {isEditingNotes ? (
+              <div className="space-y-3">
+                <textarea
+                  value={editableNotes}
+                  onChange={(e) => setEditableNotes(e.target.value)}
+                  className="w-full p-4 bg-white border border-indigo-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  rows={4}
+                />
+                <div className="flex gap-2">
+                  <button 
+                    onClick={handleUpdateNotes}
+                    className="flex-1 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg"
+                  >
+                    Save Notes
+                  </button>
+                  <button 
+                    onClick={() => setIsEditingNotes(false)}
+                    className="flex-1 py-2 bg-slate-100 text-slate-500 text-xs font-bold rounded-lg"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                  <p className="text-sm text-slate-700 leading-relaxed italic">
+                    "{lead.notes || 'No notes available for this lead.'}"
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setIsEditingNotes(true)}
+                  className="mt-4 w-full py-2.5 text-indigo-600 text-sm font-bold hover:bg-indigo-50 rounded-xl transition-all"
+                >
+                  Update Notes
+                </button>
+              </>
+            )}
           </div>
 
           <div className="glass p-6 rounded-2xl space-y-4">
@@ -197,15 +313,15 @@ const LeadDetail: React.FC = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-500">Record Created</span>
-                <span className="font-bold text-slate-700">{lead.createdAt}</span>
+                <span className="font-bold text-slate-700">{new Date(lead.createdAt).toLocaleDateString()}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-500">Last Updated</span>
-                <span className="font-bold text-slate-700">{lead.updatedAt}</span>
+                <span className="font-bold text-slate-700">{new Date(lead.updatedAt).toLocaleDateString()}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-500">Lead ID</span>
-                <span className="font-mono text-xs font-bold text-slate-400">#LD-0000{lead.id}</span>
+                <span className="font-mono text-[10px] font-bold text-slate-400 uppercase">{lead._id}</span>
               </div>
             </div>
           </div>

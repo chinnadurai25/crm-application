@@ -16,8 +16,10 @@ app.use(express.json());
 // Routes
 const leadRoutes = require('./src/routes/leadRoutes').default;
 const authRoutes = require('./src/routes/authRoutes').default;
+const customerRoutes = require('./src/routes/customerRoutes').default;
 app.use('/api/leads', leadRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/customers', customerRoutes);
 
 // Database Connection
 const connectDB = async () => {

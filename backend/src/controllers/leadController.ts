@@ -56,3 +56,38 @@ export const updateLead = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server Error updating lead', error });
   }
 };
+
+// @desc    Add timeline entry to a lead
+// @route   POST /api/leads/:id/timeline
+// @access  Public
+export const addTimelineEntry = async (req: Request, res: Response) => {
+  try {
+    const { type, content, user } = req.body;
+    
+    const updatedLead = await Lead.findByIdAndUpdate(
+      req.params.id,
+      {
+        $push: {
+          timeline: {
+            $each: [{
+              type,
+              content,
+              user: user || 'Unknown User',
+              createdAt: new Date(),
+            }],
+            $position: 0
+          }
+        }
+      },
+      { new: true }
+    );
+
+    if (!updatedLead) {
+      return res.status(404).json({ message: 'Lead not found' });
+    }
+
+    res.status(200).json(updatedLead);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error adding timeline entry', error });
+  }
+};

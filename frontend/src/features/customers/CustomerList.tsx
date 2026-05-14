@@ -1,29 +1,45 @@
 import React, { useState } from 'react';
 import { 
   Users, Mail, Phone, Building2, Calendar, 
-  Search, Filter, Download,
+  Search, Download,
   ArrowUpRight, Star, ExternalLink
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { useAppDispatch, useAppSelector } from '../../store';
+import { fetchCustomers } from '../../store/slices/customerSlice';
 
 const CustomerList: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const { items: customers, isLoading } = useAppSelector((state) => state.customers);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock customers data
-  const customers = [
-    { id: 'c1', name: 'James Wilson', email: 'james@globex.com', phone: '+1 555 987 6543', company: 'Globex Corp', sector: 'Technology', totalSpent: '$12,400', status: 'Active', joinedAt: '2026-01-15' },
-    { id: 'c2', name: 'Sarah Miller', email: 'sarah@penta.io', phone: '+1 444 333 2222', company: 'Penta Digital', sector: 'Marketing', totalSpent: '$8,200', status: 'Active', joinedAt: '2026-02-20' },
-    { id: 'c3', name: 'Michael Chen', email: 'm.chen@apex.net', phone: '+1 111 222 3333', company: 'Apex Logistics', sector: 'Logistics', totalSpent: '$45,000', status: 'VIP', joinedAt: '2025-11-10' },
-    { id: 'c4', name: 'Emily Blunt', email: 'emily@horizon.org', phone: '+1 999 888 7777', company: 'Horizon Edu', sector: 'Education', totalSpent: '$3,500', status: 'New', joinedAt: '2026-03-30' },
-  ];
+  React.useEffect(() => {
+    dispatch(fetchCustomers());
+  }, [dispatch]);
 
   const getStatusStyle = (status: string) => {
     switch (status) {
       case 'VIP': return 'bg-amber-100 text-amber-700 border-amber-200';
       case 'Active': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      case 'Inactive': return 'bg-rose-100 text-rose-700 border-rose-200';
       default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   };
+
+  const filteredCustomers = customers.filter(customer => 
+    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (customer.company && customer.company.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const totalSpent = customers.reduce((sum, c) => sum + (c.totalSpent || 0), 0);
+
+  if (isLoading && customers.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -49,7 +65,7 @@ const CustomerList: React.FC = () => {
           </div>
           <div>
             <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Customers</span>
-            <h3 className="text-2xl font-bold text-slate-900">1,248</h3>
+            <h3 className="text-2xl font-bold text-slate-900">{customers.length}</h3>
           </div>
         </div>
         <div className="glass p-6 rounded-2xl flex items-center gap-4">
@@ -66,8 +82,8 @@ const CustomerList: React.FC = () => {
             <Star className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Lifetime Value</span>
-            <h3 className="text-2xl font-bold text-slate-900">$2.4M</h3>
+            <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Revenue</span>
+            <h3 className="text-2xl font-bold text-slate-900">${(totalSpent / 1000).toFixed(1)}k</h3>
           </div>
         </div>
       </div>
@@ -84,18 +100,12 @@ const CustomerList: React.FC = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all">
-            <Filter className="w-4 h-4" />
-            Filters
-          </button>
-        </div>
       </div>
 
-      {/* Grid Layout for Customers (Premium feel) */}
+      {/* Grid Layout for Customers */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-        {customers.map((customer) => (
-          <div key={customer.id} className="glass p-6 rounded-3xl group hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-indigo-100">
+        {filteredCustomers.map((customer) => (
+          <div key={customer._id} className="glass p-6 rounded-3xl group hover:shadow-2xl transition-all duration-300 border-2 border-transparent hover:border-indigo-100">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 font-bold text-xl group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
@@ -113,7 +123,7 @@ const CustomerList: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-2 text-slate-400 text-sm mt-0.5 font-medium">
                     <Building2 className="w-3 h-3" />
-                    {customer.company}
+                    {customer.company || 'No Company'}
                   </div>
                 </div>
               </div>
@@ -125,11 +135,11 @@ const CustomerList: React.FC = () => {
             <div className="grid grid-cols-2 gap-4 mt-8">
               <div className="space-y-1">
                 <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Total Spent</span>
-                <p className="text-sm font-bold text-slate-900">{customer.totalSpent}</p>
+                <p className="text-sm font-bold text-slate-900">${customer.totalSpent?.toLocaleString() || 0}</p>
               </div>
               <div className="space-y-1">
-                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Industry</span>
-                <p className="text-sm font-bold text-slate-900">{customer.sector}</p>
+                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Sector</span>
+                <p className="text-sm font-bold text-slate-900">{customer.sector || 'N/A'}</p>
               </div>
             </div>
 
@@ -146,7 +156,7 @@ const CustomerList: React.FC = () => {
               </div>
               <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium italic">
                 <Calendar className="w-3.5 h-3.5" />
-                Joined {customer.joinedAt}
+                Joined {new Date(customer.joinedAt).toLocaleDateString()}
               </div>
             </div>
           </div>

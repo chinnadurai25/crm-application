@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction, isAnyOf } from '@reduxjs/toolkit';
 import api from '../../utils/api';
 
 export interface Lead {
@@ -9,8 +9,16 @@ export interface Lead {
   company?: string;
   status: 'New' | 'Contacted' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Lost' | 'Converted';
   source?: string;
+  assignedTo?: string;
   value?: number;
   notes?: string;
+  timeline?: Array<{
+    _id: string;
+    type: 'note' | 'call' | 'email' | 'status';
+    content: string;
+    user: string;
+    createdAt: string;
+  }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -56,6 +64,24 @@ export const createLead = createAsyncThunk('leads/createLead', async (leadData: 
   }
 });
 
+export const updateLead = createAsyncThunk('leads/updateLead', async ({ id, data }: { id: string, data: Partial<Lead> }, { rejectWithValue }) => {
+  try {
+    const response = await api.put(`/leads/${id}`, data);
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.message || 'Failed to update lead');
+  }
+});
+
+export const addTimelineEntry = createAsyncThunk('leads/addTimelineEntry', async ({ id, entry }: { id: string, entry: any }, { rejectWithValue }) => {
+  try {
+    const response = await api.post(`/leads/${id}/timeline`, entry);
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.message || 'Failed to add timeline entry');
+  }
+});
+
 const leadSlice = createSlice({
   name: 'leads',
   initialState,
@@ -94,7 +120,32 @@ const leadSlice = createSlice({
       .addCase(createLead.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
-      });
+      })
+      // Update Lead / Add Timeline
+      .addMatcher(
+        isAnyOf(updateLead.fulfilled, addTimelineEntry.fulfilled),
+        (state, action: PayloadAction<Lead>) => {
+          state.isLoading = false;
+          const index = state.items.findIndex(item => item._id === action.payload._id);
+          if (index !== -1) {
+            state.items[index] = action.payload;
+          }
+        }
+      )
+      .addMatcher(
+        isAnyOf(updateLead.pending, addTimelineEntry.pending),
+        (state) => {
+          state.isLoading = true;
+          state.error = null;
+        }
+      )
+      .addMatcher(
+        isAnyOf(updateLead.rejected, addTimelineEntry.rejected),
+        (state, action) => {
+          state.isLoading = false;
+          state.error = action.payload as string;
+        }
+      );
   },
 });
 

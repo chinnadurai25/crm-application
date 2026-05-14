@@ -7,8 +7,15 @@ export interface ILead extends Document {
   company?: string;
   status: 'New' | 'Contacted' | 'Qualified' | 'Proposal' | 'Negotiation';
   source?: string;
+  assignedTo?: string;
   value?: number;
   notes?: string;
+  timeline?: Array<{
+    type: 'note' | 'call' | 'email' | 'status';
+    content: string;
+    user: string;
+    createdAt: Date;
+  }>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,8 +32,17 @@ const LeadSchema: Schema = new Schema(
       default: 'New',
     },
     source: { type: String },
+    assignedTo: { type: String },
     value: { type: Number, default: 0 },
     notes: { type: String },
+    timeline: [
+      {
+        type: { type: String, enum: ['note', 'call', 'email', 'status'] },
+        content: { type: String },
+        user: { type: String },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
   },
   { timestamps: true }
 );
