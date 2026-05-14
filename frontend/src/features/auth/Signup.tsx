@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Lock, User, Briefcase, Globe, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, User, AlertCircle, ShieldCheck } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { register, clearError } from '../../store/slices/authSlice';
