@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   AreaChart, Area, PieChart, Pie, Cell 
 } from 'recharts';
 import { 
@@ -122,7 +122,7 @@ const Dashboard: React.FC = () => {
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {sourceData.map((entry, index) => (
+                  {sourceData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
