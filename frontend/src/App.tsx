@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './components/layout/MainLayout';
 import Dashboard from './features/analytics/Dashboard';
 import LeadList from './features/leads/LeadList';
+import CreateLead from './features/leads/CreateLead';
 import LeadDetail from './features/leads/LeadDetail';
 import CustomerList from './features/customers/CustomerList';
 import TaskList from './features/tasks/TaskList';
@@ -20,6 +21,7 @@ function App() {
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="leads" element={<LeadList />} />
+        <Route path="leads/create" element={<CreateLead />} />
         <Route path="leads/:id" element={<LeadDetail />} />
         <Route path="customers" element={<CustomerList />} />
         <Route path="tasks" element={<TaskList />} />

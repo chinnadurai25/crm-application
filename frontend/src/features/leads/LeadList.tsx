@@ -5,24 +5,20 @@ import {
   ChevronLeft, ChevronRight, Download
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../../store';
+import { fetchLeads } from '../../store/slices/leadSlice';
 import { cn } from '../../utils/cn';
-import AddLeadModal from './AddLeadModal';
 
 const LeadList: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { items: leads, isLoading } = useAppSelector((state) => state.leads);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  // Mock leads data (normally from Redux/API)
-  const leads = [
-    { id: '1', name: 'Alice Johnson', email: 'alice@example.com', phone: '+1 234 567 8901', company: 'TechCorp', status: 'New', source: 'Google', createdAt: '2026-04-01' },
-    { id: '2', name: 'Bob Smith', email: 'bob@smith.io', phone: '+1 987 654 3210', company: 'Build-it Inc', status: 'Qualified', source: 'Facebook', createdAt: '2026-03-28' },
-    { id: '3', name: 'Charlie Davis', email: 'charlie@davis.com', phone: '+1 555 012 3456', company: 'Cloud Systems', status: 'Contacted', source: 'Website', createdAt: '2026-04-03' },
-    { id: '4', name: 'Diana Prince', email: 'diana@amazon.net', phone: '+1 444 777 8888', company: 'Themyscira', status: 'Lost', source: 'Referral', createdAt: '2026-03-25' },
-    { id: '5', name: 'Ethan Hunt', email: 'ethan@imf.org', phone: '+1 111 222 3333', company: 'Mission Control', status: 'Converted', source: 'Google', createdAt: '2026-04-05' },
-    { id: '6', name: 'Fiona Gallagher', email: 'fiona@southside.com', phone: '+1 666 999 0000', company: 'Southside Deli', status: 'New', source: 'Facebook', createdAt: '2026-04-06' },
-  ];
+  React.useEffect(() => {
+    dispatch(fetchLeads());
+  }, [dispatch]);
 
   const statusColors = {
     'New': 'bg-blue-50 text-blue-700 border-blue-100',
@@ -30,7 +26,25 @@ const LeadList: React.FC = () => {
     'Qualified': 'bg-indigo-50 text-indigo-700 border-indigo-100',
     'Lost': 'bg-slate-50 text-slate-700 border-slate-100',
     'Converted': 'bg-emerald-50 text-emerald-700 border-emerald-100',
+    'Proposal': 'bg-violet-50 text-violet-700 border-violet-100',
+    'Negotiation': 'bg-rose-50 text-rose-700 border-rose-100',
   };
+
+  const filteredLeads = leads.filter(lead => {
+    const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (lead.company && lead.company.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesStatus = statusFilter === 'All' || lead.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  if (isLoading && leads.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -46,7 +60,7 @@ const LeadList: React.FC = () => {
             Export
           </button>
           <button 
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => navigate('/leads/create')}
             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 rounded-xl text-sm font-semibold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all"
           >
             <Plus className="w-4 h-4" />
@@ -55,10 +69,6 @@ const LeadList: React.FC = () => {
         </div>
       </div>
 
-      <AddLeadModal 
-        isOpen={isAddModalOpen} 
-        onClose={() => setIsAddModalOpen(false)} 
-      />
 
       {/* Filters & Search */}
       <div className="glass p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -77,7 +87,7 @@ const LeadList: React.FC = () => {
             <Filter className="w-4 h-4 text-slate-400" />
             <span className="text-sm font-medium text-slate-500 whitespace-nowrap">Filter by:</span>
           </div>
-          {['All', 'New', 'Contacted', 'Qualified', 'Converted', 'Lost'].map((status) => (
+          {['All', 'New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Converted', 'Lost'].map((status) => (
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
@@ -109,11 +119,11 @@ const LeadList: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {leads.map((lead) => (
+              {filteredLeads.map((lead) => (
                 <tr 
-                  key={lead.id} 
+                  key={lead._id} 
                   className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
-                  onClick={() => navigate(`/leads/${lead.id}`)}
+                  onClick={() => navigate(`/leads/${lead._id}`)}
                 >
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
