@@ -5,19 +5,14 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { cn } from '../../utils/cn';
 
-interface LeadConversionForm {
-  dealValue: number;
-  closingDate: string;
-  contractType: string;
-  notes?: string;
-}
-
 const schema = yup.object().shape({
   dealValue: yup.number().typeError('Must be a number').required('Deal value is required').min(1, 'Value must be greater than 0'),
   closingDate: yup.string().required('Closing date is required'),
   contractType: yup.string().required('Contract type is required'),
-  notes: yup.string().optional(),
+  notes: yup.string().default(''),
 });
+
+type LeadConversionForm = yup.InferType<typeof schema>;
 
 interface ConvertLeadModalProps {
   isOpen: boolean;
@@ -27,9 +22,12 @@ interface ConvertLeadModalProps {
 
 const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({ isOpen, onClose, leadName }) => {
   const { register, handleSubmit, formState: { errors }, reset } = useForm<LeadConversionForm>({
-    resolver: yupResolver(schema) as any,
+    resolver: yupResolver(schema),
     defaultValues: {
+      dealValue: 0,
+      closingDate: '',
       contractType: 'Annual',
+      notes: '',
     }
   });
 

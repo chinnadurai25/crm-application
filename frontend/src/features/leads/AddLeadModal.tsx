@@ -12,7 +12,7 @@ const schema = yup.object({
   company: yup.string().required('Company name is required'),
   source: yup.string().required('Lead source is required'),
   status: yup.string().required('Status is required'),
-  notes: yup.string(),
+  notes: yup.string().default(''),
 }).required();
 
 type FormData = yup.InferType<typeof schema>;
@@ -26,8 +26,13 @@ const AddLeadModal: React.FC<AddLeadModalProps> = ({ isOpen, onClose }) => {
   const { register, handleSubmit, formState: { errors }, reset } = useForm<FormData>({
     resolver: yupResolver(schema),
     defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      company: '',
       status: 'New',
       source: 'Website',
+      notes: '',
     }
   });
 

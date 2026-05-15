@@ -6,7 +6,6 @@ import {
   UserPlus, 
   CheckSquare, 
   MessageSquare, 
-  Settings, 
   ChevronLeft, 
   ChevronRight,
   LogOut,
