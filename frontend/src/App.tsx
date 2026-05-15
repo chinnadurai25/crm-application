@@ -5,6 +5,7 @@ import LeadList from './features/leads/LeadList';
 import CreateLead from './features/leads/CreateLead';
 import LeadDetail from './features/leads/LeadDetail';
 import CustomerList from './features/customers/CustomerList';
+import CustomerDetail from './features/customers/CustomerDetail';
 import TaskList from './features/tasks/TaskList';
 import SupportTickets from './features/support/SupportTickets';
 import Login from './features/auth/Login';
@@ -24,6 +25,7 @@ function App() {
         <Route path="leads/create" element={<CreateLead />} />
         <Route path="leads/:id" element={<LeadDetail />} />
         <Route path="customers" element={<CustomerList />} />
+        <Route path="customers/:id" element={<CustomerDetail />} />
         <Route path="tasks" element={<TaskList />} />
         <Route path="support" element={<SupportTickets />} />
         <Route path="analytics" element={<Navigate to="/" replace />} />

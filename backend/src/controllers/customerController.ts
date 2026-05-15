@@ -42,3 +42,57 @@ export const createCustomer = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server Error creating customer', error });
   }
 };
+
+// @desc    Update a customer
+// @route   PUT /api/customers/:id
+// @access  Public
+export const updateCustomer = async (req: Request, res: Response) => {
+  try {
+    const customer = await Customer.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
+    res.status(200).json(customer);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error updating customer', error });
+  }
+};
+
+// @desc    Add a timeline entry to a customer
+// @route   POST /api/customers/:id/timeline
+// @access  Public
+export const addCustomerTimelineEntry = async (req: Request, res: Response) => {
+  try {
+    const { type, content, user } = req.body;
+    
+    const updatedCustomer = await Customer.findByIdAndUpdate(
+      req.params.id,
+      {
+        $push: {
+          timeline: {
+            $each: [{
+              type,
+              content,
+              user: user || 'Unknown User',
+              createdAt: new Date(),
+            }],
+            $position: 0
+          }
+        }
+      },
+      { new: true }
+    );
+
+    if (!updatedCustomer) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
+
+    res.status(200).json(updatedCustomer);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error adding timeline entry', error });
+  }
+};

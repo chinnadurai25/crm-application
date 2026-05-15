@@ -82,6 +82,15 @@ export const addTimelineEntry = createAsyncThunk('leads/addTimelineEntry', async
   }
 });
 
+export const convertLead = createAsyncThunk('leads/convertLead', async ({ id, data }: { id: string, data: any }, { rejectWithValue }) => {
+  try {
+    const response = await api.post(`/leads/${id}/convert`, data);
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.message || 'Failed to convert lead');
+  }
+});
+
 const leadSlice = createSlice({
   name: 'leads',
   initialState,
@@ -132,15 +141,26 @@ const leadSlice = createSlice({
           }
         }
       )
+      // Convert Lead
       .addMatcher(
-        isAnyOf(updateLead.pending, addTimelineEntry.pending),
+        isAnyOf(convertLead.fulfilled),
+        (state, action: PayloadAction<{ lead: Lead, customer: any }>) => {
+          state.isLoading = false;
+          const index = state.items.findIndex(item => item._id === action.payload.lead._id);
+          if (index !== -1) {
+            state.items[index] = action.payload.lead;
+          }
+        }
+      )
+      .addMatcher(
+        isAnyOf(updateLead.pending, addTimelineEntry.pending, convertLead.pending),
         (state) => {
           state.isLoading = true;
           state.error = null;
         }
       )
       .addMatcher(
-        isAnyOf(updateLead.rejected, addTimelineEntry.rejected),
+        isAnyOf(updateLead.rejected, addTimelineEntry.rejected, convertLead.rejected),
         (state, action) => {
           state.isLoading = false;
           state.error = action.payload as string;

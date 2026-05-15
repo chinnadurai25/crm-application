@@ -1,5 +1,41 @@
 import { Request, Response } from 'express';
 import Lead from '../models/Lead';
+import Customer from '../models/Customer';
+
+// @desc    Convert a lead to a customer
+// @route   POST /api/leads/:id/convert
+// @access  Public
+export const convertLeadToCustomer = async (req: Request, res: Response) => {
+  try {
+    const { dealValue, notes } = req.body;
+    const lead = await Lead.findById(req.params.id);
+
+    if (!lead) {
+      return res.status(404).json({ message: 'Lead not found' });
+    }
+
+    // 1. Update lead status
+    lead.status = 'Converted';
+    await lead.save();
+
+    // 2. Create customer
+    const customer = await Customer.create({
+      leadId: lead._id,
+      name: lead.name,
+      email: lead.email,
+      phone: lead.phone,
+      company: lead.company,
+      totalSpent: dealValue || 0,
+      notes: notes || '',
+      status: 'Active',
+      joinedAt: new Date(),
+    });
+
+    res.status(201).json({ lead, customer });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error converting lead', error });
+  }
+};
 
 // @desc    Get all leads
 // @route   GET /api/leads

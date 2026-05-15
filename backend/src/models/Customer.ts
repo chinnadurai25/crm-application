@@ -9,6 +9,13 @@ export interface ICustomer extends Document {
   sector?: string;
   totalSpent: number;
   status: 'Active' | 'VIP' | 'New' | 'Inactive';
+  notes?: string;
+  timeline?: Array<{
+    type: 'note' | 'call' | 'email' | 'status';
+    content: string;
+    user: string;
+    createdAt: Date;
+  }>;
   joinedAt: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -28,6 +35,15 @@ const CustomerSchema: Schema = new Schema(
       enum: ['Active', 'VIP', 'New', 'Inactive'],
       default: 'Active',
     },
+    notes: { type: String },
+    timeline: [
+      {
+        type: { type: String, enum: ['note', 'call', 'email', 'status'] },
+        content: { type: String },
+        user: { type: String },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
     joinedAt: { type: Date, default: Date.now },
   },
   { timestamps: true }

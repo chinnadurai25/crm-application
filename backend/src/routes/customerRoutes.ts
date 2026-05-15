@@ -1,5 +1,11 @@
 import express from 'express';
-import { getCustomers, getCustomerById, createCustomer } from '../controllers/customerController';
+import { 
+  getCustomers, 
+  getCustomerById, 
+  createCustomer, 
+  updateCustomer, 
+  addCustomerTimelineEntry 
+} from '../controllers/customerController';
 
 const router = express.Router();
 
@@ -8,6 +14,9 @@ router.route('/')
   .post(createCustomer);
 
 router.route('/:id')
-  .get(getCustomerById);
+  .get(getCustomerById)
+  .put(updateCustomer);
+
+router.post('/:id/timeline', addCustomerTimelineEntry);
 
 export default router;

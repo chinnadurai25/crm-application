@@ -1,5 +1,6 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction, isAnyOf } from '@reduxjs/toolkit';
 import api from '../../utils/api';
+import { convertLead } from './leadSlice';
 
 export interface Customer {
   _id: string;
@@ -11,6 +12,14 @@ export interface Customer {
   sector?: string;
   totalSpent: number;
   status: 'Active' | 'VIP' | 'New' | 'Inactive';
+  notes?: string;
+  timeline?: Array<{
+    _id: string;
+    type: 'note' | 'call' | 'email' | 'status';
+    content: string;
+    user: string;
+    createdAt: string;
+  }>;
   joinedAt: string;
   createdAt: string;
   updatedAt: string;
@@ -38,6 +47,30 @@ export const fetchCustomers = createAsyncThunk('customers/fetchCustomers', async
   }
 });
 
+export const updateCustomer = createAsyncThunk(
+  'customers/updateCustomer',
+  async ({ id, data }: { id: string; data: Partial<Customer> }, { rejectWithValue }) => {
+    try {
+      const response = await api.put(`/customers/${id}`, data);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to update customer');
+    }
+  }
+);
+
+export const addCustomerTimelineEntry = createAsyncThunk(
+  'customers/addTimelineEntry',
+  async ({ id, entry }: { id: string; entry: any }, { rejectWithValue }) => {
+    try {
+      const response = await api.post(`/customers/${id}/timeline`, entry);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to add timeline entry');
+    }
+  }
+);
+
 const customerSlice = createSlice({
   name: 'customers',
   initialState,
@@ -55,7 +88,38 @@ const customerSlice = createSlice({
       .addCase(fetchCustomers.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
-      });
+      })
+      // Handle Lead Conversion
+      .addCase(convertLead.fulfilled, (state, action) => {
+        state.items.unshift(action.payload.customer);
+      })
+      // Update Customer / Add Timeline
+      .addMatcher(
+        isAnyOf(updateCustomer.fulfilled, addCustomerTimelineEntry.fulfilled),
+        (state, action: PayloadAction<Customer>) => {
+          state.isLoading = false;
+          const index = state.items.findIndex(item => item._id === action.payload._id);
+          if (index !== -1) {
+            state.items[index] = action.payload;
+          } else {
+            state.items.unshift(action.payload);
+          }
+        }
+      )
+      .addMatcher(
+        isAnyOf(updateCustomer.pending, addCustomerTimelineEntry.pending),
+        (state) => {
+          state.isLoading = true;
+          state.error = null;
+        }
+      )
+      .addMatcher(
+        isAnyOf(updateCustomer.rejected, addCustomerTimelineEntry.rejected),
+        (state, action) => {
+          state.isLoading = false;
+          state.error = action.payload as string;
+        }
+      );
   },
 });
 

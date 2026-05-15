@@ -1,5 +1,11 @@
 import express from 'express';
-import { getLeads, createLead, updateLead, addTimelineEntry } from '../controllers/leadController';
+import { 
+  getLeads, 
+  createLead, 
+  updateLead, 
+  addTimelineEntry,
+  convertLeadToCustomer 
+} from '../controllers/leadController';
 
 const router = express.Router();
 
@@ -12,5 +18,7 @@ router.route('/:id')
 
 router.route('/:id/timeline')
   .post(addTimelineEntry);
+
+router.post('/:id/convert', convertLeadToCustomer);
 
 export default router;

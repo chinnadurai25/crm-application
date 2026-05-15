@@ -4,6 +4,9 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { cn } from '../../utils/cn';
+import { useAppDispatch, useAppSelector } from '../../store';
+import { convertLead } from '../../store/slices/leadSlice';
+import { useNavigate } from 'react-router-dom';
 
 const schema = yup.object().shape({
   dealValue: yup.number().typeError('Must be a number').required('Deal value is required').min(1, 'Value must be greater than 0'),
@@ -17,26 +20,36 @@ type LeadConversionForm = yup.InferType<typeof schema>;
 interface ConvertLeadModalProps {
   isOpen: boolean;
   onClose: () => void;
+  leadId: string;
   leadName: string;
 }
 
-const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({ isOpen, onClose, leadName }) => {
+const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({ isOpen, onClose, leadId, leadName }) => {
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const { isLoading } = useAppSelector(state => state.leads);
+
   const { register, handleSubmit, formState: { errors }, reset } = useForm<LeadConversionForm>({
     resolver: yupResolver(schema),
     defaultValues: {
       dealValue: 0,
-      closingDate: '',
+      closingDate: new Date().toISOString().split('T')[0],
       contractType: 'Annual',
       notes: '',
     }
   });
 
-  const onSubmit = (data: LeadConversionForm) => {
-    console.log('Conversion Data:', data);
-    // Simulate conversion logic
-    reset();
-    onClose();
-    // In a real app, this would dispatch an action and redirect to the customer profile
+  const onSubmit = async (data: LeadConversionForm) => {
+    try {
+      const result = await dispatch(convertLead({ id: leadId, data })).unwrap();
+      reset();
+      onClose();
+      if (result.customer) {
+        navigate(`/customers/${result.customer._id}`);
+      }
+    } catch (err) {
+      console.error('Conversion failed:', err);
+    }
   };
 
   if (!isOpen) return null;
@@ -132,10 +145,17 @@ const ConvertLeadModal: React.FC<ConvertLeadModalProps> = ({ isOpen, onClose, le
           <div className="flex flex-col gap-3 pt-2">
             <button 
               type="submit"
-              className="w-full py-4 bg-indigo-600 rounded-2xl text-sm font-bold text-white hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all flex items-center justify-center gap-2 group"
+              disabled={isLoading}
+              className="w-full py-4 bg-indigo-600 rounded-2xl text-sm font-bold text-white hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
             >
-              Complete Conversion
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  Complete Conversion
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
             </button>
             <button 
               type="button"

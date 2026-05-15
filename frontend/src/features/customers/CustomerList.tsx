@@ -4,6 +4,7 @@ import {
   Search, Download,
   ArrowUpRight, Star, ExternalLink
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { cn } from '../../utils/cn';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { fetchCustomers } from '../../store/slices/customerSlice';
@@ -33,6 +34,42 @@ const CustomerList: React.FC = () => {
 
   const totalSpent = customers.reduce((sum, c) => sum + (c.totalSpent || 0), 0);
 
+  const handleExport = () => {
+    if (customers.length === 0) return;
+
+    // CSV Headers
+    const headers = ['Name', 'Email', 'Phone', 'Company', 'Sector', 'Status', 'Total Spent', 'Joined At'];
+    
+    // CSV Rows
+    const rows = filteredCustomers.map(c => [
+      c.name,
+      c.email,
+      c.phone || '',
+      c.company || '',
+      c.sector || '',
+      c.status,
+      c.totalSpent,
+      new Date(c.joinedAt).toLocaleDateString()
+    ]);
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `customers_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (isLoading && customers.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -50,7 +87,10 @@ const CustomerList: React.FC = () => {
           <p className="text-slate-500 text-sm">Manage your long-term business relationships and lifetime value.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
+          <button 
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+          >
             <Download className="w-4 h-4" />
             Export data
           </button>
@@ -127,9 +167,12 @@ const CustomerList: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <button className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all">
+              <Link 
+                to={`/customers/${customer._id}`}
+                className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+              >
                 <ExternalLink className="w-5 h-5" />
-              </button>
+              </Link>
             </div>
 
             <div className="grid grid-cols-2 gap-4 mt-8">
