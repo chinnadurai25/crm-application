@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import * as XLSX from 'xlsx';
 import Lead from '../models/Lead';
 import Customer from '../models/Customer';
 
@@ -127,3 +128,86 @@ export const addTimelineEntry = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server Error adding timeline entry', error });
   }
 };
+
+// @desc    Bulk create leads from Excel
+// @route   POST /api/leads/bulk
+// @access  Public
+export const bulkCreateLeads = async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Please upload an Excel file' });
+    }
+
+    // Read the Excel file from buffer
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    
+    // Convert to JSON
+    const data = XLSX.utils.sheet_to_json(worksheet);
+
+    if (data.length === 0) {
+      return res.status(400).json({ message: 'The Excel file is empty' });
+    }
+
+    // Map Excel columns to Lead model
+    const leadsToCreate = data.map((row: any) => {
+      const statusInput = row.Status || row.status || 'New';
+      // Normalize status: Capitalize first letter (e.g., 'new' -> 'New')
+      const status = statusInput.charAt(0).toUpperCase() + statusInput.slice(1).toLowerCase();
+      
+      const allowedStatuses = ['New', 'Contacted', 'Qualified', 'Proposal', 'Negotiation', 'Converted', 'Lost'];
+      const finalStatus = allowedStatuses.includes(status) ? status : 'New';
+
+      return {
+        name: row.Name || row.name || row['Full Name'],
+        email: row.Email || row.email,
+        phone: row.Phone || row.phone || '',
+        company: row.Company || row.company || '',
+        source: row.Source || row.source || 'Import',
+        status: finalStatus,
+        value: row.Value || row.value || 0,
+        notes: row.Notes || row.notes || '',
+      };
+    });
+
+    // Filter out rows missing name or email
+    const validLeads = leadsToCreate.filter(lead => lead.name && lead.email);
+
+    if (validLeads.length === 0) {
+      return res.status(400).json({ message: 'No valid leads found (Name and Email are required)' });
+    }
+
+    // Insert into database
+    const createdLeads = await Lead.insertMany(validLeads);
+
+    res.status(201).json({
+      message: `Successfully imported ${createdLeads.length} leads`,
+      count: createdLeads.length,
+      leads: createdLeads
+    });
+  } catch (error) {
+    console.error('Bulk Import Error:', error);
+    res.status(500).json({ message: 'Server Error during bulk import', error });
+  }
+};
+
+// @desc    Delete a lead
+// @route   DELETE /api/leads/:id
+// @access  Public
+export const deleteLead = async (req: Request, res: Response) => {
+  try {
+    const lead = await Lead.findById(req.params.id);
+
+    if (!lead) {
+      return res.status(404).json({ message: 'Lead not found' });
+    }
+
+    await Lead.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({ message: 'Lead deleted successfully', id: req.params.id });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error deleting lead', error });
+  }
+};
+

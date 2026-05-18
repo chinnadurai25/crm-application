@@ -64,6 +64,21 @@ export const createLead = createAsyncThunk('leads/createLead', async (leadData: 
   }
 });
 
+export const bulkCreateLeads = createAsyncThunk('leads/bulkCreateLeads', async (file: File, { rejectWithValue }) => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/leads/bulk', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.message || 'Failed to import leads');
+  }
+});
+
 export const updateLead = createAsyncThunk('leads/updateLead', async ({ id, data }: { id: string, data: Partial<Lead> }, { rejectWithValue }) => {
   try {
     const response = await api.put(`/leads/${id}`, data);
@@ -88,6 +103,15 @@ export const convertLead = createAsyncThunk('leads/convertLead', async ({ id, da
     return response.data;
   } catch (error: any) {
     return rejectWithValue(error.response?.data?.message || 'Failed to convert lead');
+  }
+});
+
+export const deleteLead = createAsyncThunk('leads/deleteLead', async (id: string, { rejectWithValue }) => {
+  try {
+    const response = await api.delete(`/leads/${id}`);
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.message || 'Failed to delete lead');
   }
 });
 
@@ -130,6 +154,24 @@ const leadSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
+      // Bulk Create Leads
+      .addCase(bulkCreateLeads.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(bulkCreateLeads.fulfilled, (state, action: PayloadAction<{ leads: Lead[] }>) => {
+        state.isLoading = false;
+        state.items = [...action.payload.leads, ...state.items];
+      })
+      .addCase(bulkCreateLeads.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      // Delete Lead
+      .addCase(deleteLead.fulfilled, (state, action: PayloadAction<{ id: string }>) => {
+        state.isLoading = false;
+        state.items = state.items.filter(item => item._id !== action.payload.id);
+      })
       // Update Lead / Add Timeline
       .addMatcher(
         isAnyOf(updateLead.fulfilled, addTimelineEntry.fulfilled),
@@ -153,14 +195,14 @@ const leadSlice = createSlice({
         }
       )
       .addMatcher(
-        isAnyOf(updateLead.pending, addTimelineEntry.pending, convertLead.pending),
+        isAnyOf(updateLead.pending, addTimelineEntry.pending, convertLead.pending, deleteLead.pending),
         (state) => {
           state.isLoading = true;
           state.error = null;
         }
       )
       .addMatcher(
-        isAnyOf(updateLead.rejected, addTimelineEntry.rejected, convertLead.rejected),
+        isAnyOf(updateLead.rejected, addTimelineEntry.rejected, convertLead.rejected, deleteLead.rejected),
         (state, action) => {
           state.isLoading = false;
           state.error = action.payload as string;

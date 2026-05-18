@@ -4,14 +4,15 @@ import {
   Tag, MessageSquare, History, User,
   CheckCircle2, PhoneCall, MailPlus, AlertCircle
 } from 'lucide-react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store';
-import { updateLead, addTimelineEntry } from '../../store/slices/leadSlice';
+import { updateLead, addTimelineEntry, deleteLead } from '../../store/slices/leadSlice';
 import { cn } from '../../utils/cn';
 import ConvertLeadModal from './ConvertLeadModal';
 
 const LeadDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { items: leads } = useAppSelector((state) => state.leads);
   const lead = leads.find((l) => l._id === id);
@@ -65,6 +66,17 @@ const LeadDetail: React.FC = () => {
       setIsEditingNotes(false);
     } catch (err) {
       console.error('Failed to update notes:', err);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this lead record? This action cannot be undone.')) {
+      try {
+        await dispatch(deleteLead(lead._id)).unwrap();
+        navigate('/leads');
+      } catch (err) {
+        console.error('Failed to delete lead:', err);
+      }
     }
   };
 
@@ -327,7 +339,10 @@ const LeadDetail: React.FC = () => {
             </div>
           </div>
           
-          <button className="w-full py-4 bg-rose-50 text-rose-600 rounded-2xl text-sm font-bold hover:bg-rose-100 transition-all">
+          <button 
+            onClick={handleDelete}
+            className="w-full py-4 bg-rose-50 text-rose-600 rounded-2xl text-sm font-bold hover:bg-rose-100 transition-all"
+          >
             Delete Lead Record
           </button>
         </div>

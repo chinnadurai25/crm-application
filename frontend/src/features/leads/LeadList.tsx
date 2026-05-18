@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { 
   Search, Filter, Plus, MoreHorizontal, 
   Mail, Building2, Calendar,
-  ChevronLeft, ChevronRight, Download
+  ChevronLeft, ChevronRight, Download, Trash2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store';
-import { fetchLeads } from '../../store/slices/leadSlice';
+import { fetchLeads, deleteLead } from '../../store/slices/leadSlice';
 import { cn } from '../../utils/cn';
 
 const LeadList: React.FC = () => {
@@ -38,6 +38,47 @@ const LeadList: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
+  const handleExport = () => {
+    if (filteredLeads.length === 0) {
+      alert('No leads to export');
+      return;
+    }
+
+    const headers = ['Name', 'Email', 'Phone', 'Company', 'Status', 'Source', 'Created At'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredLeads.map(lead => [
+        `"${lead.name || ''}"`,
+        `"${lead.email || ''}"`,
+        `"${lead.phone || ''}"`,
+        `"${lead.company || ''}"`,
+        `"${lead.status || ''}"`,
+        `"${lead.source || ''}"`,
+        `"${lead.createdAt || ''}"`
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `leads_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to delete this lead?')) {
+      try {
+        await dispatch(deleteLead(id)).unwrap();
+      } catch (error) {
+        console.error('Failed to delete lead:', error);
+      }
+    }
+  };
+
   if (isLoading && leads.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -55,7 +96,10 @@ const LeadList: React.FC = () => {
           <p className="text-slate-500 text-sm">Track and manage your potential customers lifecycle.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
+          <button 
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+          >
             <Download className="w-4 h-4" />
             Export
           </button>
@@ -158,9 +202,18 @@ const LeadList: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all">
-                      <MoreHorizontal className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={(e) => handleDelete(e, lead._id)}
+                        className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                        title="Delete Lead"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
