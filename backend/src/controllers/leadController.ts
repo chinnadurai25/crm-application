@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import * as XLSX from 'xlsx';
 import Lead from '../models/Lead';
 import Customer from '../models/Customer';
+import User from '../models/User';
 
 // @desc    Convert a lead to a customer
 // @route   POST /api/leads/:id/convert
@@ -32,7 +33,26 @@ export const convertLeadToCustomer = async (req: Request, res: Response) => {
       joinedAt: new Date(),
     });
 
-    res.status(201).json({ lead, customer });
+    // 3. Create User account for the customer
+    let credentials = null;
+    const userExists = await User.findOne({ email: lead.email });
+    if (!userExists) {
+      const password = 'Cust@' + Math.floor(10000 + Math.random() * 90000);
+      await User.create({
+        name: lead.name,
+        email: lead.email,
+        password: password,
+        role: 'customer',
+      });
+      credentials = { email: lead.email, password };
+      
+      customer.portalPassword = password;
+      await customer.save();
+    } else {
+      credentials = { email: lead.email, password: '(Account already exists)' };
+    }
+
+    res.status(201).json({ lead, customer, credentials });
   } catch (error) {
     res.status(500).json({ message: 'Server Error converting lead', error });
   }

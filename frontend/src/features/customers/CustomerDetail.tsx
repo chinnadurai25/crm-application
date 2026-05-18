@@ -3,19 +3,22 @@ import {
   ArrowLeft, Mail, Phone, Building2,  
   Tag, MessageSquare, History,
   PhoneCall, MailPlus, AlertCircle,
-  Star, TrendingUp, DollarSign, Calendar
+  Star, TrendingUp, DollarSign, Calendar, Lock, Trash2
 } from 'lucide-react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store';
-import { updateCustomer, addCustomerTimelineEntry } from '../../store/slices/customerSlice';
+import { updateCustomer, addCustomerTimelineEntry, deleteCustomer } from '../../store/slices/customerSlice';
 import { cn } from '../../utils/cn';
+import EditCustomerModal from './EditCustomerModal';
 
 const CustomerDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { items: customers } = useAppSelector((state) => state.customers);
   const customer = customers.find((c) => c._id === id);
 
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddingTimeline, setIsAddingTimeline] = useState(false);
   const [newTimelineContent, setNewTimelineContent] = useState('');
   const [timelineType, setTimelineType] = useState<'note' | 'call' | 'email'>('note');
@@ -28,6 +31,18 @@ const CustomerDetail: React.FC = () => {
       setEditableNotes(customer.notes || '');
     }
   }, [customer]);
+
+  const handleRemoveCustomer = async () => {
+    if (window.confirm('Are you sure you want to remove this customer? This action cannot be undone.')) {
+      try {
+        await dispatch(deleteCustomer(customer!._id)).unwrap();
+        navigate('/customers');
+      } catch (err) {
+        console.error('Failed to remove customer:', err);
+        alert('Failed to remove customer.');
+      }
+    }
+  };
 
   if (!customer) {
     return (
@@ -104,7 +119,17 @@ const CustomerDetail: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-all">
+          <button 
+            onClick={handleRemoveCustomer}
+            className="px-4 py-2 bg-white border border-rose-200 rounded-xl text-sm font-semibold text-rose-600 hover:bg-rose-50 hover:border-rose-300 transition-all flex items-center gap-2"
+          >
+            <Trash2 className="w-4 h-4" />
+            Remove
+          </button>
+          <button 
+            onClick={() => setIsEditModalOpen(true)}
+            className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-all"
+          >
             Edit Profile
           </button>
           <button className="px-4 py-2 bg-indigo-600 rounded-xl text-sm font-semibold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all flex items-center gap-2">
@@ -113,6 +138,12 @@ const CustomerDetail: React.FC = () => {
           </button>
         </div>
       </div>
+
+      <EditCustomerModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        customer={customer}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Details & Timeline */}
@@ -188,6 +219,35 @@ const CustomerDetail: React.FC = () => {
                   <div>
                     <span className="text-xs text-slate-400 block font-bold">Business Name</span>
                     <span className="text-sm font-bold text-slate-700">{customer.company || 'Private Individual'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Portal Credentials */}
+          <div className="glass p-6 rounded-2xl space-y-4">
+            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest opacity-40">Portal Credentials</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-xs text-indigo-400/80 block font-bold">User ID / Email</span>
+                    <span className="text-sm font-bold text-slate-700">{customer.email}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-xs text-indigo-400/80 block font-bold">Initial Password</span>
+                    <span className="text-sm font-mono font-bold text-slate-700">{customer.portalPassword || 'Not Available'}</span>
                   </div>
                 </div>
               </div>

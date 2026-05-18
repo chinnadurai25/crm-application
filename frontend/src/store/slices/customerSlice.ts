@@ -23,6 +23,7 @@ export interface Customer {
   joinedAt: string;
   createdAt: string;
   updatedAt: string;
+  portalPassword?: string;
 }
 
 interface CustomerState {
@@ -46,6 +47,18 @@ export const fetchCustomers = createAsyncThunk('customers/fetchCustomers', async
     return rejectWithValue(error.response?.data?.message || 'Failed to fetch customers');
   }
 });
+
+export const deleteCustomer = createAsyncThunk(
+  'customers/deleteCustomer',
+  async (id: string, { rejectWithValue }) => {
+    try {
+      await api.delete(`/customers/${id}`);
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to delete customer');
+    }
+  }
+);
 
 export const updateCustomer = createAsyncThunk(
   'customers/updateCustomer',
@@ -92,6 +105,10 @@ const customerSlice = createSlice({
       // Handle Lead Conversion
       .addCase(convertLead.fulfilled, (state, action) => {
         state.items.unshift(action.payload.customer);
+      })
+      // Handle Delete Customer
+      .addCase(deleteCustomer.fulfilled, (state, action) => {
+        state.items = state.items.filter(item => item._id !== action.payload);
       })
       // Update Customer / Add Timeline
       .addMatcher(

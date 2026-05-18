@@ -96,3 +96,35 @@ export const addCustomerTimelineEntry = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Server Error adding timeline entry', error });
   }
 };
+
+// @desc    Get customer by email
+// @route   GET /api/customers/email/:email
+// @access  Public
+export const getCustomerByEmail = async (req: Request, res: Response) => {
+  try {
+    const customer = await Customer.findOne({ email: req.params.email });
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
+    res.status(200).json(customer);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error retrieving customer by email', error });
+  }
+};
+
+// @desc    Delete a customer
+// @route   DELETE /api/customers/:id
+// @access  Public
+export const deleteCustomer = async (req: Request, res: Response) => {
+  try {
+    const customer = await Customer.findByIdAndDelete(req.params.id);
+    
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
+
+    res.status(200).json({ message: 'Customer removed' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error deleting customer', error });
+  }
+};

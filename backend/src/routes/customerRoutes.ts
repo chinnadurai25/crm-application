@@ -4,7 +4,9 @@ import {
   getCustomerById, 
   createCustomer, 
   updateCustomer, 
-  addCustomerTimelineEntry 
+  addCustomerTimelineEntry,
+  getCustomerByEmail,
+  deleteCustomer
 } from '../controllers/customerController';
 
 const router = express.Router();
@@ -13,9 +15,12 @@ router.route('/')
   .get(getCustomers)
   .post(createCustomer);
 
+router.get('/email/:email', getCustomerByEmail);
+
 router.route('/:id')
   .get(getCustomerById)
-  .put(updateCustomer);
+  .put(updateCustomer)
+  .delete(deleteCustomer);
 
 router.post('/:id/timeline', addCustomerTimelineEntry);
 

@@ -13,6 +13,7 @@ app.use(express.json());
 
 import leadRoutes from './routes/leadRoutes';
 import authRoutes from './routes/authRoutes';
+import customerRoutes from './routes/customerRoutes';
 
 // Database Connection
 connectDB();
@@ -20,6 +21,7 @@ connectDB();
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadRoutes);
+app.use('/api/customers', customerRoutes);
 
 // Basic Route for testing
 app.get('/api/health', (req, res) => {

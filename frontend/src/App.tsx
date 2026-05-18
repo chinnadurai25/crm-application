@@ -10,8 +10,12 @@ import TaskList from './features/tasks/TaskList';
 import SupportTickets from './features/support/SupportTickets';
 import Login from './features/auth/Login';
 import Signup from './features/auth/Signup';
+import CustomerDashboard from './features/customers/CustomerDashboard';
+import { useAppSelector } from './store';
 
 function App() {
+  const { user } = useAppSelector((state) => state.auth);
+
   return (
     <Routes>
       {/* Auth routes */}
@@ -20,7 +24,10 @@ function App() {
 
       {/* Main Layout wrap for authenticated routes */}
       <Route path="/" element={<MainLayout />}>
-        <Route index element={<Dashboard />} />
+        <Route 
+          index 
+          element={user?.role === 'customer' ? <CustomerDashboard /> : <Dashboard />} 
+        />
         <Route path="leads" element={<LeadList />} />
         <Route path="leads/create" element={<CreateLead />} />
         <Route path="leads/:id" element={<LeadDetail />} />

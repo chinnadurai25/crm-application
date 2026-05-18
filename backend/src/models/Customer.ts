@@ -19,6 +19,7 @@ export interface ICustomer extends Document {
   joinedAt: Date;
   createdAt: Date;
   updatedAt: Date;
+  portalPassword?: string;
 }
 
 const CustomerSchema: Schema = new Schema(
@@ -45,6 +46,7 @@ const CustomerSchema: Schema = new Schema(
       },
     ],
     joinedAt: { type: Date, default: Date.now },
+    portalPassword: { type: String },
   },
   { timestamps: true }
 );
