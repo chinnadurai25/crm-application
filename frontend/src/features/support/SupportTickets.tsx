@@ -25,6 +25,26 @@ const SupportTickets: React.FC = () => {
     }
   };
 
+  const [messages, setMessages] = useState([
+    { id: 1, sender: 'agent', text: "Hi Alice, I noticed you were having trouble with the analytics dashboard. Have you tried clearing your browser cache?" },
+    { id: 2, sender: 'customer', text: "Yes, I've tried that and even used a different browser, but the charts are still stuck on 'Loading...'. I really need this data for my 3 PM meeting." },
+    { id: 3, sender: 'agent', text: "Understood. I've escalated this to our engineering team. We'll get a fix out within the next hour. I'll update you here as soon as it's live!" },
+  ]);
+  const [inputText, setInputText] = useState('');
+
+  const handleSend = () => {
+    if (!inputText.trim()) return;
+    setMessages([...messages, { id: Date.now(), sender: 'agent', text: inputText }]);
+    setInputText('');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-140px)] animate-fade-in space-y-6">
       {/* Header */}
@@ -109,16 +129,20 @@ const SupportTickets: React.FC = () => {
               </div>
 
               {/* Chat Area */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-repeat opacity-[0.03]">
-                <div className="self-end max-w-[80%] bg-indigo-600 text-white rounded-2xl rounded-tr-none p-4 shadow-lg shadow-indigo-100 text-sm leading-relaxed">
-                  Hi Alice, I noticed you were having trouble with the analytics dashboard. Have you tried clearing your browser cache?
-                </div>
-                <div className="self-start max-w-[80%] bg-white border border-slate-100 text-slate-700 rounded-2xl rounded-tl-none p-4 shadow-sm text-sm leading-relaxed">
-                  Yes, I've tried that and even used a different browser, but the charts are still stuck on "Loading...". I really need this data for my 3 PM meeting.
-                </div>
-                <div className="self-end max-w-[80%] bg-indigo-600 text-white rounded-2xl rounded-tr-none p-4 shadow-lg shadow-indigo-100 text-sm leading-relaxed">
-                  Understood. I've escalated this to our engineering team. We'll get a fix out within the next hour. I'll update you here as soon as it's live!
-                </div>
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col custom-scrollbar bg-slate-50/50">
+                {messages.map((msg) => (
+                  <div 
+                    key={msg.id} 
+                    className={cn(
+                      "max-w-[80%] p-4 text-sm leading-relaxed shadow-sm",
+                      msg.sender === 'agent' 
+                        ? "self-end bg-indigo-600 text-white rounded-2xl rounded-tr-none shadow-indigo-100" 
+                        : "self-start bg-white border border-slate-100 text-slate-700 rounded-2xl rounded-tl-none"
+                    )}
+                  >
+                    {msg.text}
+                  </div>
+                ))}
               </div>
 
               {/* Input Area */}
@@ -127,6 +151,9 @@ const SupportTickets: React.FC = () => {
                   <textarea 
                     rows={2}
                     placeholder="Type your response here..."
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    onKeyDown={handleKeyDown}
                     className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-4 pr-32 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all resize-none text-sm"
                   />
                   <div className="absolute right-3 bottom-4 flex items-center gap-2">
@@ -136,7 +163,10 @@ const SupportTickets: React.FC = () => {
                     <button className="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
                       <Smile className="w-5 h-5" />
                     </button>
-                    <button className="bg-indigo-600 p-2.5 rounded-xl text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all">
+                    <button 
+                      onClick={handleSend}
+                      className="bg-indigo-600 p-2.5 rounded-xl text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all"
+                    >
                       <Send className="w-5 h-5" />
                     </button>
                   </div>
